@@ -1,0 +1,73 @@
+# render.yaml — Render Blueprint
+#
+# This file lets you deploy the entire stack (backend API, frontend static site,
+# and a managed Postgres database) in one step using Render's "Blueprints" feature:
+#   1. Push this repo to GitHub/GitLab.
+#   2. In the Render dashboard: New -> Blueprint -> select this repo.
+#   3. Render reads this file and provisions everything below automatically.
+#
+# After the first deploy, go to the backend service's Environment tab and fill in
+# any variables marked "sync: false" (Render will prompt you for these — they are
+# secrets that should never be committed to the repo).
+
+databases:
+  - name: medisense-db
+    plan: free
+    databaseName: medisense
+    user: medisense
+
+services:
+  # ---------------- Backend (Flask API) ----------------
+  - type: web
+    name: medisense-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt && python ml/train_model.py"
+    startCommand: "bash start.sh"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: medisense-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: RENDER
+        value: "true"
+      - key: CORS_ORIGINS
+        sync: false   # set to your frontend URL after first deploy, e.g. https://medisense-frontend.onrender.com
+      - key: FRONTEND_URL
+        sync: false   # same value as above, used to build links inside emails
+      - key: ADMIN_EMAIL
+        sync: false   # choose your own admin login email
+      - key: ADMIN_PASSWORD
+        sync: false   # choose your own admin login password
+      - key: MAIL_SERVER
+        sync: false   # optional — leave unset to use console-mode email logging
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USE_TLS
+        value: "true"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        sync: false
+
+  # ---------------- Frontend (static React build) ----------------
+  - type: web
+    name: medisense-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false   # set to https://medisense-backend.onrender.com/api after first deploy
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
