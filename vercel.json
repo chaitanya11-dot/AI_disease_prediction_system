@@ -5,7 +5,8 @@
             "framework": "vite"
         },
         "backend": {
-            "root": "backend"
+            "root": "backend",
+            "runtime": "python3.12"
         }
     },
     "rewrites": [

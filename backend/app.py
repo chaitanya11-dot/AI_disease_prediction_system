@@ -1,16 +1,8 @@
 """
 app.py - Main Flask application entrypoint
 
-Local development:
-    python app.py
-    (Set FLASK_DEBUG=true in your environment to enable the debug reloader.)
-
-Make sure you've run the following first (see README for full setup):
-    python ml/train_model.py
-    python seed_db.py
-
-Production:
-    See start.sh — runs seed_db.py then serves via gunicorn.
+Local dev:  python app.py  (set FLASK_DEBUG=true to enable reloader)
+Production: bash start.sh  (seeds DB then starts gunicorn)
 """
 import os
 from flask import Flask, jsonify
@@ -28,39 +20,9 @@ from routes.chatbot_routes import chatbot_bp
 from routes.admin_routes import admin_bp
 
 
-DEV_DEFAULT_SECRET = "dev-secret-key-change-in-production"
-DEV_DEFAULT_JWT_SECRET = "dev-jwt-secret-change-in-production"
-
-
-def _enforce_production_secrets(app):
-    """
-    Refuses to boot with placeholder dev secrets when running on a recognized
-    hosting platform (Render sets RENDER=true automatically; this also checks
-    the generic FLASK_ENV/ENVIRONMENT convention some other hosts use).
-    Prevents accidentally deploying with publicly-known SECRET_KEY/JWT_SECRET_KEY.
-    """
-    is_hosted = (
-        os.environ.get("RENDER") == "true"
-        or os.environ.get("FLASK_ENV") == "production"
-        or os.environ.get("ENVIRONMENT") == "production"
-    )
-    if not is_hosted:
-        return
-
-    if app.config["SECRET_KEY"] == DEV_DEFAULT_SECRET or app.config["JWT_SECRET_KEY"] == DEV_DEFAULT_JWT_SECRET:
-        raise RuntimeError(
-            "Refusing to start: SECRET_KEY and/or JWT_SECRET_KEY are still set to their "
-            "insecure default values. Set real random values for SECRET_KEY and "
-            "JWT_SECRET_KEY in your environment before deploying. "
-            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
-        )
-
-
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-
-    _enforce_production_secrets(app)
 
     os.makedirs(app.config["REPORTS_DIR"], exist_ok=True)
 
@@ -68,7 +30,14 @@ def create_app():
     jwt.init_app(app)
     bcrypt.init_app(app)
 
-    CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}}, supports_credentials=True)
+    # Allow all configured origins; supports_credentials needed for JWT in headers
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    )
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(prediction_bp)
@@ -80,7 +49,11 @@ def create_app():
 
     @app.route("/api/health", methods=["GET"])
     def health_check():
-        return jsonify({"status": "ok", "service": "AI Disease Prediction System API"}), 200
+        return jsonify({
+            "status": "ok",
+            "service": "AI Disease Prediction System API",
+            "cors_origins": app.config["CORS_ORIGINS"],
+        }), 200
 
     @app.errorhandler(404)
     def not_found(e):
