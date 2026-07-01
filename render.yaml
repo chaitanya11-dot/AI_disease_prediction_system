@@ -4,8 +4,7 @@
 #   1. Push this repo to GitHub
 #   2. Render Dashboard → New → Blueprint → pick your repo
 #   3. Fill in the "sync: false" variables when prompted
-#   4. After first deploy, update CORS_ORIGINS + FRONTEND_URL + VITE_API_URL
-#      with the real URLs, then trigger a redeploy of both services.
+#   4. After first deploy, trigger a redeploy of both services.
 
 databases:
   - name: medisense-db
@@ -28,36 +27,22 @@ services:
           name: medisense-db
           property: connectionString
       - key: SECRET_KEY
-        generateValue: true          # Render auto-generates a secure random value
+        generateValue: true
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION
         value: "3.11.0"
       - key: CORS_ORIGINS
-        sync: false                  # Set to your frontend URL after first deploy
-                                     # e.g. https://medisense-frontend.onrender.com
+        # Add ALL frontend origins separated by commas (no spaces around commas)
+        value: "https://ai-disease-prediction-system-fronte.vercel.app,https://ai-disease-prediction-system-fronte.vercel.app/"
       - key: FRONTEND_URL
-        sync: false                  # Same value as CORS_ORIGINS
+        value: "https://ai-disease-prediction-system-fronte.vercel.app"
       - key: ADMIN_EMAIL
         sync: false                  # e.g. admin@yourdomain.com
       - key: ADMIN_PASSWORD
         sync: false                  # Choose a strong password
 
-  # ──────────── Frontend (React static site) ────────────
-  - type: web
-    name: medisense-frontend
-    runtime: static
-    plan: free
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        sync: false                  # Set to https://medisense-backend.onrender.com/api
-                                     # before/after first deploy
-      - key: NODE_VERSION
-        value: "18.20.0"
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html     # Required for React Router — all paths serve index.html
+  # ──────────── Frontend (Vercel — deploy separately) ────────────
+  # The frontend is deployed on Vercel, not Render.
+  # Set VITE_API_URL in Vercel's Environment Variables dashboard:
+  #   VITE_API_URL = https://medisense-backend-xixc.onrender.com/api

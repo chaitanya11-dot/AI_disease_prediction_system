@@ -34,7 +34,7 @@ class Config:
     # On Render, set this env var to your exact frontend URL:
     #   CORS_ORIGINS=https://medisense-frontend-xixc.onrender.com
     CORS_ORIGINS = [
-        o.strip() for o in
+        o.strip().rstrip("/") for o in
         os.environ.get(
             "CORS_ORIGINS",
             "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173"
