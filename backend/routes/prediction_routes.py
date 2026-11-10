@@ -11,6 +11,7 @@ from extensions import db
 from models import Prediction, Disease, User
 from ml.predictor import get_predictor
 from data.disease_dataset import SYMPTOM_VOCAB
+from utils.auth_utils import parse_optional_int
 
 prediction_bp = Blueprint("prediction", __name__, url_prefix="/api")
 
@@ -48,6 +49,11 @@ def predict():
     if not symptoms or not isinstance(symptoms, list) or len(symptoms) == 0:
         return jsonify({"error": "Please select at least one symptom."}), 400
 
+    try:
+        age_value = parse_optional_int(age, min_value=0, max_value=120, field_name="Age")
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
     # normalize symptom keys defensively
     symptoms = [str(s).strip().lower().replace(" ", "_") for s in symptoms]
     valid_symptoms = [s for s in symptoms if s in SYMPTOM_VOCAB]
@@ -78,7 +84,7 @@ def predict():
     prediction = Prediction(
         user_id=user_id,
         symptoms=json.dumps(valid_symptoms),
-        age=int(age) if age else None,
+        age=age_value,
         gender=gender,
         additional_info=additional_info,
         predicted_disease=top_disease_name,

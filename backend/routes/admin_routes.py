@@ -10,7 +10,7 @@ from flask_jwt_extended import jwt_required
 
 from extensions import db, bcrypt
 from models import User, Disease, Prediction
-from utils.auth_utils import admin_required, is_valid_email
+from utils.auth_utils import admin_required, is_valid_email, parse_optional_int
 from ml.predictor import get_predictor
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
@@ -219,8 +219,11 @@ def delete_disease(disease_id):
 @admin_bp.route("/predictions", methods=["GET"])
 @admin_required
 def admin_list_predictions():
-    page = int(request.args.get("page", 1))
-    per_page = int(request.args.get("per_page", 25))
+    try:
+        page = parse_optional_int(request.args.get("page", 1), min_value=1, max_value=10_000, field_name="Page")
+        per_page = parse_optional_int(request.args.get("per_page", 25), min_value=1, max_value=100, field_name="Per page")
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     query = Prediction.query.order_by(Prediction.prediction_date.desc())
     total = query.count()

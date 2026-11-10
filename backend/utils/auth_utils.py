@@ -10,6 +10,25 @@ from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request, get_jwt
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
+def parse_optional_int(value, *, min_value=None, max_value=None, field_name="value"):
+    """Coerce a request field to an integer while validating its bounds."""
+    if value is None:
+        return None
+    if isinstance(value, str) and not value.strip():
+        return None
+
+    try:
+        parsed = int(str(value).strip())
+    except (TypeError, ValueError):
+        raise ValueError(f"{field_name} must be a valid integer.") from None
+
+    if min_value is not None and parsed < min_value:
+        raise ValueError(f"{field_name} must be at least {min_value}.")
+    if max_value is not None and parsed > max_value:
+        raise ValueError(f"{field_name} must be at most {max_value}.")
+    return parsed
+
+
 def is_valid_email(email: str) -> bool:
     return bool(email) and bool(EMAIL_REGEX.match(email.strip()))
 

@@ -11,7 +11,7 @@ from flask_jwt_extended import (
 
 from extensions import db, bcrypt
 from models import User, PasswordResetToken
-from utils.auth_utils import is_valid_email, is_valid_password
+from utils.auth_utils import is_valid_email, is_valid_password, parse_optional_int
 from utils.email_utils import send_email
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -34,6 +34,11 @@ def register():
     if not valid_pw:
         return jsonify({"error": pw_msg}), 400
 
+    try:
+        parsed_age = parse_optional_int(age, min_value=0, max_value=120, field_name="Age")
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "An account with this email already exists."}), 409
 
@@ -42,7 +47,7 @@ def register():
         name=name,
         email=email,
         password_hash=password_hash,
-        age=int(age) if age else None,
+        age=parsed_age,
         gender=gender,
         role="user",
     )
@@ -176,9 +181,9 @@ def update_profile():
         user.name = name.strip()
     if age is not None:
         try:
-            user.age = int(age)
-        except (ValueError, TypeError):
-            pass
+            user.age = parse_optional_int(age, min_value=0, max_value=120, field_name="Age")
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
     if gender:
         user.gender = gender
 

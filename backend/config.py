@@ -43,7 +43,10 @@ class Config:
     ]
 
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "")
-    MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
+    try:
+        MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("MAIL_PORT must be a valid integer.") from exc
     MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
