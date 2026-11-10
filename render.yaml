@@ -34,9 +34,9 @@ services:
         value: "3.11.0"
       - key: CORS_ORIGINS
         # Add ALL frontend origins separated by commas (no spaces around commas)
-        value: "https://ai-disease-prediction-system-fronte.vercel.app,https://ai-disease-prediction-system-fronte.vercel.app/"
+        value: "https://ai-disease-prediction-system-omega.vercel.app,https://ai-disease-prediction-system-fronte.vercel.app"
       - key: FRONTEND_URL
-        value: "https://ai-disease-prediction-system-fronte.vercel.app"
+        value: "https://ai-disease-prediction-system-omega.vercel.app"
       - key: ADMIN_EMAIL
         sync: false                  # e.g. admin@yourdomain.com
       - key: ADMIN_PASSWORD
