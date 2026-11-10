@@ -8,9 +8,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def _normalize_db_url(url: str) -> str:
-    """Render issues postgres:// URLs but SQLAlchemy requires postgresql://"""
+    """Normalize Render PostgreSQL URLs to use the installed psycopg2 driver."""
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql://", 1)
+        return url.replace("postgres://", "postgresql+psycopg2://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg2://", 1)
     return url
 
 
